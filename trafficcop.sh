@@ -336,9 +336,9 @@ initial_config() {
         echo "$(date '+%Y-%m-%d %H:%M:%S') 2. 只计算进站流量"| tee -a "$LOG_FILE"
         echo "$(date '+%Y-%m-%d %H:%M:%S') 3. 出进站流量都计算"| tee -a "$LOG_FILE"
         echo "$(date '+%Y-%m-%d %H:%M:%S') 4. 出站和进站流量只取大"| tee -a "$LOG_FILE"
-        read -p "请输入选择 (1-4): " mode_choice
+        read -p "请输入选择 (1-4，默认为1): " mode_choice
         case $mode_choice in
-            1) TRAFFIC_MODE="out"; break ;;
+            1|"") TRAFFIC_MODE="out"; break ;;
             2) TRAFFIC_MODE="in"; break ;;
             3) TRAFFIC_MODE="total"; break ;;
             4) TRAFFIC_MODE="max"; break ;;
