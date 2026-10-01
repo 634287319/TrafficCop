@@ -77,9 +77,14 @@ migrate_files() {
     done
 
     # 更新 crontab 中的脚本路径
-    if crontab -l | grep -q "/root/traffic_monitor.sh"; then
-        crontab -l | sed "s|/root/traffic_monitor.sh|$SCRIPT_PATH|g" | crontab -
-        echo "$(date '+%Y-%m-%d %H:%M:%S') Crontab 已更新为新的脚本路径" | tee -a "$LOG_FILE"
+    # 注意：不要直接调用 crontab -l，因为全新机器上 cron 还没装
+    if command -v crontab >/dev/null 2>&1; then
+        if crontab -l 2>/dev/null | grep -q "/root/traffic_monitor.sh"; then
+            crontab -l 2>/dev/null | sed "s|/root/traffic_monitor.sh|$SCRIPT_PATH|g" | crontab -
+            echo "$(date '+%Y-%m-%d %H:%M:%S') Crontab 已更新为新的脚本路径" | tee -a "$LOG_FILE"
+        fi
+    else
+        echo "$(date '+%Y-%m-%d %H:%M:%S') crontab 命令不存在，跳过旧路径迁移（稍后 install_packages 会自动安装）" | tee -a "$LOG_FILE"
     fi
 
     echo "$(date '+%Y-%m-%d %H:%M:%S') 文件已迁移到新的工作目录: $WORK_DIR" | tee -a "$LOG_FILE"
@@ -121,6 +126,23 @@ check_and_install_packages() {
         done
     else
         echo "$(date '+%Y-%m-%d %H:%M:%S') 所有必要的软件包已安装" | tee -a "$LOG_FILE"
+    fi
+
+    # 确保 cron 服务处于运行状态（全新安装后不会自动 enable+start）
+    if command -v systemctl >/dev/null 2>&1; then
+        if ! systemctl is-active --quiet cron 2>/dev/null; then
+            echo "$(date '+%Y-%m-%d %H:%M:%S') cron 服务未运行，尝试启动..." | tee -a "$LOG_FILE"
+            sudo systemctl enable cron 2>/dev/null | tee -a "$LOG_FILE"
+            sudo systemctl start cron 2>/dev/null | tee -a "$LOG_FILE"
+        fi
+    elif command -v service >/dev/null 2>&1; then
+        sudo service cron start 2>/dev/null | tee -a "$LOG_FILE"
+    fi
+
+    # 验证 crontab 命令最终可用
+    if ! command -v crontab >/dev/null 2>&1; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') 警告：crontab 命令仍不可用，请手动检查" | tee -a "$LOG_FILE"
+        return 1
     fi
 
     # 验证 tc 命令是否可用
