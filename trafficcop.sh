@@ -363,8 +363,11 @@ initial_config() {
     fi
 
     while true; do
-        read -p "请输入流量限制 ($UNIT_LABEL): " TRAFFIC_LIMIT
-        if [[ "$TRAFFIC_LIMIT" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+        read -p "请输入流量限制 ($UNIT_LABEL，默认为195): " TRAFFIC_LIMIT
+        if [[ -z "$TRAFFIC_LIMIT" ]]; then
+            TRAFFIC_LIMIT=195
+            break
+        elif [[ "$TRAFFIC_LIMIT" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
             break
         else
             echo "无效输入，请输入一个有效的数字。"
@@ -372,8 +375,11 @@ initial_config() {
     done
 
     while true; do
-        read -p "请输入容错范围 ($UNIT_LABEL): " TRAFFIC_TOLERANCE
-        if [[ "$TRAFFIC_TOLERANCE" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+        read -p "请输入容错范围 ($UNIT_LABEL，默认为5): " TRAFFIC_TOLERANCE
+        if [[ -z "$TRAFFIC_TOLERANCE" ]]; then
+            TRAFFIC_TOLERANCE=5
+            break
+        elif [[ "$TRAFFIC_TOLERANCE" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
             break
         else
             echo "无效输入，请输入一个有效的数字。"
@@ -384,9 +390,9 @@ initial_config() {
         echo "$(date '+%Y-%m-%d %H:%M:%S') 请选择限制模式："| tee -a "$LOG_FILE"
         echo "$(date '+%Y-%m-%d %H:%M:%S') 1. TC 模式（更灵活）"| tee -a "$LOG_FILE"
         echo "$(date '+%Y-%m-%d %H:%M:%S') 2. 关机模式（更安全）"| tee -a "$LOG_FILE"
-        read -p "请输入选择 (1-2): " limit_mode_choice
+        read -p "请输入选择 (1-2，默认为2): " limit_mode_choice
         case $limit_mode_choice in
-            1) 
+            1)
                 LIMIT_MODE="tc"
                 read -p "请输入限速 (kbit/s，默认为20): " LIMIT_SPEED
                 LIMIT_SPEED=${LIMIT_SPEED:-20}
@@ -394,12 +400,12 @@ initial_config() {
                     echo "无效输入，使用默认值：20 kbit/s"
                     LIMIT_SPEED=20
                 fi
-                break 
+                break
                 ;;
-            2) 
+            2|"")
                 LIMIT_MODE="shutdown"
                 LIMIT_SPEED=""  # 关机模式不需要限速
-                break 
+                break
                 ;;
             *) echo "无效输入，请重新选择。" ;;
         esac
